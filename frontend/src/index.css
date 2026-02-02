@@ -1,0 +1,45 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* WCAG AA: high contrast, focus visible */
+:root {
+  --focus-ring: 3px solid #2563eb;
+  --focus-offset: 2px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, sans-serif;
+  background-color: #0f172a;
+  color: #f8fafc;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Visible focus for keyboard users (WCAG 2.4.7) */
+:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+/* Skip link for screen readers */
+.skip-link {
+  position: absolute;
+  top: -100px;
+  left: 0;
+  padding: 1rem 1.5rem;
+  background: #2563eb;
+  color: white;
+  z-index: 100;
+  font-size: 1.125rem;
+  transition: top 0.2s;
+}
+
+.skip-link:focus {
+  top: 0;
+}

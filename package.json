@@ -1,0 +1,17 @@
+{
+  "name": "voice-activated-browser-automation",
+  "version": "1.0.0",
+  "description": "Voice-Activated Browser Automation for Accessibility - Elderly and motor-impaired users",
+  "private": true,
+  "scripts": {
+    "install:all": "npm install && cd frontend && npm install && cd ../backend && npm install",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && npm run dev",
+    "build:frontend": "cd frontend && npm run build",
+    "build:backend": "cd backend && npm run build",
+    "start:backend": "cd backend && npm start"
+  },
+  "keywords": ["accessibility", "voice", "automation", "n8n", "playwright"],
+  "author": "",
+  "license": "MIT"
+}

@@ -1,0 +1,56 @@
+{
+  "name": "Voice Automation - Browser Control",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "voice-automation",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "voice-automation"
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first();\nconst body = item.json.body || {};\nconst intent = body.intent || {};\nconst runId = body.runId || '';\nconst action = (intent.action || 'unknown').toLowerCase();\nconst site = (intent.site || '').toLowerCase();\nconst params = intent.params || {};\n\nlet status = [];\nif (action === 'book_train' || (action === 'search_train') || site === 'irctc') {\n  status = [\n    { status: 'running', message: 'Opening IRCTC…', detail: 'irctc' },\n    { status: 'running', message: 'Filling from, to and date…', detail: JSON.stringify(params) },\n    { status: 'success', message: 'Demo step done. Add Playwright node for real browser control.', detail: '' }\n  ];\n} else if (action === 'book_flight' || action === 'search_flight' || site === 'goibibo') {\n  status = [\n    { status: 'running', message: 'Opening Goibibo…', detail: 'goibibo' },\n    { status: 'running', message: 'Filling flight search…', detail: JSON.stringify(params) },\n    { status: 'success', message: 'Demo step done. Add Playwright node for real browser control.', detail: '' }\n  ];\n} else {\n  status = [{ status: 'success', message: 'Intent received (demo). Add Playwright node for automation.', detail: action }];\n}\n\nreturn { json: { runId, status } };"
+      },
+      "id": "code-handler",
+      "name": "Build Status (replace with Playwright)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}"
+      },
+      "id": "respond",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [680, 300]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [{ "node": "Build Status (replace with Playwright)", "type": "main", "index": 0 }]
+      ]
+    },
+    "Build Status (replace with Playwright)": {
+      "main": [
+        [{ "node": "Respond to Webhook", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": { "executionOrder": "v1" },
+  "staticData": null,
+  "meta": { "templateCredsSetupCompleted": false },
+  "pinData": {}
+}
