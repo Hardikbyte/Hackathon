@@ -4,15 +4,16 @@ export async function githubCreateRoute(req, res) {
   const token = process.env.GITHUB_TOKEN;
   if (!token) {
     return res.status(501).json({
+      ok: false,
       message: 'GITHUB_TOKEN not set. Add a token with repo scope to enable this feature.',
     });
   }
   const { name, description, isPublic } = req.body || {};
   if (!name || typeof name !== 'string') {
-    return res.status(400).json({ message: 'Repository name required' });
+    return res.status(400).json({ ok: false, message: 'Repository name required' });
   }
   try {
-    const createRes = await fetch('https://api.github.com/user/repos', {
+    const createRes = await fetch('https://api.github.com/Hardikwb/repos', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -30,12 +31,16 @@ export async function githubCreateRoute(req, res) {
     const repo = await createRes.json().catch(() => ({}));
     if (!createRes.ok) {
       return res.status(createRes.status).json({
+        ok: false,
         message: repo.message || repo.errors?.[0]?.message || 'Failed to create repository',
       });
     }
-    return res.json({ url: repo.html_url, cloneUrl: repo.clone_url });
+    return res.json({ ok: true, url: repo.html_url, cloneUrl: repo.clone_url });
   } catch (e) {
     console.error(e);
-    return res.status(500).json({ message: e.message || 'Failed to create GitHub repository' });
+    return res.status(500).json({
+      ok: false,
+      message: e.message || 'Failed to create GitHub repository',
+    });
   }
 }

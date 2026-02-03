@@ -8,6 +8,35 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const ROOT = path.resolve(__dirname, '../..');
+const SKIP_DIRS = new Set([
+  'node_modules',
+  '.git',
+  '.next',
+  '.cache',
+  '.turbo',
+  'dist',
+  'build',
+  'coverage',
+]);
+const SKIP_FILES = new Set([
+  '.env',
+  '.env.local',
+  '.env.development',
+  '.env.production',
+  '.env.test',
+  'npm-debug.log',
+  'yarn-error.log',
+]);
+
+function shouldInclude(entry) {
+  const name = entry.name || '';
+  const parts = name.split('/').filter(Boolean);
+  if (parts.some((part) => SKIP_DIRS.has(part))) return false;
+  const base = path.basename(name);
+  if (SKIP_FILES.has(base)) return false;
+  if (base.endsWith('.log') || base.endsWith('.zip')) return false;
+  return true;
+}
 
 export async function downloadProjectRoute(req, res) {
   res.setHeader('Content-Type', 'application/zip');
@@ -19,10 +48,10 @@ export async function downloadProjectRoute(req, res) {
   });
   archive.pipe(res);
   const dirs = ['frontend', 'backend', 'n8n-workflow', 'prompts'];
-  const files = ['README.md', 'package.json', '.env.example'];
+  const files = ['README.md', 'package.json', 'package-lock.json', '.env.example'];
   for (const dir of dirs) {
     const full = path.join(ROOT, dir);
-    if (existsSync(full)) archive.directory(full, dir);
+    if (existsSync(full)) archive.directory(full, dir, (entry) => (shouldInclude(entry) ? entry : false));
   }
   for (const file of files) {
     const full = path.join(ROOT, file);

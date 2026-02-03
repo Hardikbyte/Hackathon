@@ -9,12 +9,14 @@ Given a user transcript (what they said), output a single JSON object with:
   - passengers (number)
   - train_number, class (for trains)
   - any other relevant slots
+- "steps": array of short todo items (3-7 steps) to complete the task
 
 Rules:
 - Only output valid JSON. No markdown, no code fences, no extra text.
 - Use empty object {} for params if nothing to extract.
 - Normalize dates to YYYY-MM-DD where possible (e.g. "tomorrow" -> actual date).
 - Keep city/station names as the user said them.
+- Always include "steps". If action is unknown, return general helpful steps.
 
 Example output:
-{"action":"book_train","site":"irctc","params":{"from":"Delhi","to":"Mumbai","date":"2025-02-03","passengers":1}}
+{"action":"book_train","site":"irctc","params":{"from":"Delhi","to":"Mumbai","date":"2025-02-03","passengers":1},"steps":["Open IRCTC","Enter Delhi to Mumbai","Select 2025-02-03","Choose 1 passenger","Search trains","Pick train/class","Proceed to booking"]}

@@ -7,14 +7,20 @@ export async function automateRoute(req, res) {
   const { intent } = req.body || {};
   const webhookUrl = process.env.N8N_WEBHOOK_URL;
   if (!webhookUrl) {
-    return res.status(500).json({ message: 'N8N_WEBHOOK_URL not configured' });
+    return res.status(500).json({ ok: false, message: 'N8N_WEBHOOK_URL not configured' });
   }
   if (!intent || !intent.action) {
-    return res.status(400).json({ message: 'Missing intent' });
+    return res.status(400).json({ ok: false, message: 'Missing intent' });
   }
   const runId = randomUUID();
   runs.set(runId, [
-    { id: randomUUID(), timestamp: Date.now(), status: 'running', message: 'Triggering n8n workflow…', detail: intent.action },
+    {
+      id: randomUUID(),
+      timestamp: Date.now(),
+      status: 'running',
+      message: 'Triggering n8n workflow...',
+      detail: intent.action,
+    },
   ]);
   try {
     const response = await fetch(webhookUrl, {
@@ -50,7 +56,7 @@ export async function automateRoute(req, res) {
       });
     }
     runs.set(runId, updates);
-    return res.json({ runId, status: updates });
+    return res.json({ ok: true, runId, status: updates });
   } catch (e) {
     console.error(e);
     const updates = runs.get(runId) || [];
@@ -62,7 +68,7 @@ export async function automateRoute(req, res) {
       detail: e.message,
     });
     runs.set(runId, updates);
-    return res.json({ runId, status: updates });
+    return res.json({ ok: false, runId, status: updates });
   }
 }
 
