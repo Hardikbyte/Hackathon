@@ -124,10 +124,26 @@ function buildStepsFromIntent(intent) {
   ];
 }
 
+const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash-lite';
+const DEPRECATED_GEMINI_ALIASES = new Set([
+  'gemini-1.5-flash',
+  'gemini-1.5-pro',
+  'gemini-1.5-flash-8b',
+]);
+
+function resolveModelName(rawModel) {
+  const cleaned = String(rawModel || '').trim();
+  if (!cleaned) return DEFAULT_GEMINI_MODEL;
+  if (DEPRECATED_GEMINI_ALIASES.has(cleaned)) {
+    return DEFAULT_GEMINI_MODEL;
+  }
+  return cleaned;
+}
+
 export async function intentRoute(req, res) {
   const { text } = req.body || {};
   const apiKey = process.env.GEMINI_API_KEY;
-  const modelName = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
+  const modelName = resolveModelName(process.env.GEMINI_MODEL);
   if (!apiKey) {
     return res.status(500).json({ ok: false, message: 'GEMINI_API_KEY not configured' });
   }
