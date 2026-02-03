@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
 import type { TranscriptEntry } from '../types';
-
+import React from 'react';
 interface VoiceRecorderProps {
   onRecorded: (blob: Blob) => void;
   /** When set, this transcript is added to the replay list (e.g. after API returns). */
