@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { Code, AlertCircle, Loader2, CheckCircle2 } from 'lucide-react';
+import { Code, AlertCircle, CheckCircle2 } from 'lucide-react';
 import type { IntentResult } from '../types';
+import { LoadingLogo } from './LoadingLogo';
 
 interface IntentDisplayProps {
   intent: IntentResult | null;
@@ -19,7 +20,6 @@ export function IntentDisplay({ intent, loading, error }: IntentDisplayProps) {
           <Code className="w-6 h-6 text-purple" />
           Detected Intent
         </h2>
-        {loading && <Loader2 className="w-5 h-5 text-accent animate-spin" />}
       </div>
 
       <div className="flex-1 bg-surface/50 rounded-xl border border-white/5 p-4 overflow-hidden relative min-h-[200px]">
@@ -30,10 +30,12 @@ export function IntentDisplay({ intent, loading, error }: IntentDisplayProps) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 flex flex-col items-center justify-center text-textMuted gap-3"
+              className="absolute inset-0 flex items-center justify-center"
             >
-              <Loader2 className="w-8 h-8 animate-spin text-accent" />
-              <p>Analyzing voice command...</p>
+              <LoadingLogo
+                label="Analyzing your voice command"
+                hint="Transcribing audio and extracting intent"
+              />
             </motion.div>
           ) : error ? (
             <motion.div

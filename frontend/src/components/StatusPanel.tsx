@@ -1,4 +1,5 @@
 import type { StatusUpdate } from '../types';
+import { LoadingLogo } from './LoadingLogo';
 
 interface StatusPanelProps {
   updates: StatusUpdate[];
@@ -14,6 +15,8 @@ const statusStyles: Record<StatusUpdate['status'], string> = {
 };
 
 export function StatusPanel({ updates, loading, error }: StatusPanelProps) {
+  const hasUpdates = updates.length > 0;
+
   return (
     <section
       className="rounded-2xl bg-surfaceLight p-6 border border-slate-600"
@@ -28,8 +31,14 @@ export function StatusPanel({ updates, loading, error }: StatusPanelProps) {
           {error}
         </p>
       )}
-      {loading && updates.length === 0 && (
-        <p className="text-accessibility-lg text-textMuted">Waiting for automation…</p>
+      {loading && (
+        <div className="mb-4">
+          <LoadingLogo
+            size="sm"
+            label={hasUpdates ? 'Automation in progress' : 'Starting automation'}
+            hint={hasUpdates ? 'Tracking live workflow updates' : 'Waiting for the first update from n8n'}
+          />
+        </div>
       )}
       <ul className="space-y-2">
         {updates.map((u) => (

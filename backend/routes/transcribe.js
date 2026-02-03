@@ -40,28 +40,61 @@ function parseAsrOutput(output) {
 }
 
 export async function transcribeRoute(req, res) {
-  const file = req.file;
-  if (!file || !file.buffer) {
-    return res.status(400).json({ ok: false, message: 'No audio file provided' });
-  }
-  if (file.mimetype && !SUPPORTED_MIME_TYPES.has(file.mimetype)) {
+  const bodyAudio = req.body?.audio;
+  const sampleRate = Number(req.body?.sampleRate || 16000);
+  let audioInput;
+
+  if (Array.isArray(bodyAudio) && bodyAudio.length) {
+    if (Number.isNaN(sampleRate) || sampleRate !== 16000) {
+      return res.status(400).json({
+        ok: false,
+        message: 'Unsupported sample rate',
+        expected: 16000,
+        received: sampleRate,
+      });
+    }
+    audioInput = Float32Array.from(bodyAudio.map((v) => Number(v)));
+    const audioBytes = audioInput.length * 4;
+    if (MAX_AUDIO_BYTES && audioBytes > MAX_AUDIO_BYTES) {
+      return res.status(413).json({
+        ok: false,
+        message: 'Audio data is too large',
+        maxBytes: MAX_AUDIO_BYTES,
+        receivedBytes: audioBytes,
+      });
+    }
+    if (audioInput.length < 512) {
+      return res.status(400).json({ ok: false, message: 'Audio data is too small to transcribe' });
+    }
+  } else {
+    const file = req.file;
+    if (!file || !file.buffer) {
+      return res.status(400).json({ ok: false, message: 'No audio file provided' });
+    }
+    if (file.mimetype && !SUPPORTED_MIME_TYPES.has(file.mimetype)) {
+      return res.status(400).json({
+        ok: false,
+        message: 'Unsupported audio type',
+        received: file.mimetype,
+        allowed: Array.from(SUPPORTED_MIME_TYPES),
+      });
+    }
+    if (MAX_AUDIO_BYTES && file.buffer.length > MAX_AUDIO_BYTES) {
+      return res.status(413).json({
+        ok: false,
+        message: 'Audio file is too large',
+        maxBytes: MAX_AUDIO_BYTES,
+        receivedBytes: file.buffer.length,
+      });
+    }
+    if (file.buffer.length < 512) {
+      return res.status(400).json({ ok: false, message: 'Audio file is too small to transcribe' });
+    }
     return res.status(400).json({
       ok: false,
-      message: 'Unsupported audio type',
-      received: file.mimetype,
-      allowed: Array.from(SUPPORTED_MIME_TYPES),
+      message: 'Unsupported audio payload',
+      detail: 'Backend expects raw PCM Float32Array. Update the client to send decoded audio samples.',
     });
-  }
-  if (MAX_AUDIO_BYTES && file.buffer.length > MAX_AUDIO_BYTES) {
-    return res.status(413).json({
-      ok: false,
-      message: 'Audio file is too large',
-      maxBytes: MAX_AUDIO_BYTES,
-      receivedBytes: file.buffer.length,
-    });
-  }
-  if (file.buffer.length < 512) {
-    return res.status(400).json({ ok: false, message: 'Audio file is too small to transcribe' });
   }
   try {
     const modelsToTry = [DEFAULT_MODEL, FALLBACK_MODEL].filter(Boolean);
@@ -69,7 +102,7 @@ export async function transcribeRoute(req, res) {
     for (const model of modelsToTry) {
       try {
         const asr = await getAsr(model);
-        const output = await asr(file.buffer, {
+        const output = await asr(audioInput, {
           language: DEFAULT_LANGUAGE,
           task: 'transcribe',
         });

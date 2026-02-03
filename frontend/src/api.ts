@@ -1,17 +1,21 @@
 import type { IntentResult, StatusUpdate } from './types';
+import { decodeAudioToMono } from './utils/audio';
 
 const API_BASE = '/api';
 
 export async function transcribeAudio(blob: Blob): Promise<{ text: string }> {
-  const formData = new FormData();
-  formData.append('audio', blob, 'recording.webm');
+  const { samples, sampleRate } = await decodeAudioToMono(blob, 16000);
   const res = await fetch(`${API_BASE}/transcribe`, {
     method: 'POST',
-    body: formData,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      audio: Array.from(samples),
+      sampleRate,
+    }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ message: res.statusText }));
-    throw new Error(err.message || 'Transcription failed');
+    throw new Error(err.detail || err.message || 'Transcription failed');
   }
   return res.json();
 }
@@ -24,7 +28,7 @@ export async function getIntent(text: string): Promise<{ intent: IntentResult }>
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ message: res.statusText }));
-    throw new Error(err.message || 'Intent extraction failed');
+    throw new Error(err.detail || err.message || 'Intent extraction failed');
   }
   return res.json();
 }

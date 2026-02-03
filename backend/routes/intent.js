@@ -127,6 +127,7 @@ function buildStepsFromIntent(intent) {
 export async function intentRoute(req, res) {
   const { text } = req.body || {};
   const apiKey = process.env.GEMINI_API_KEY;
+  const modelName = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
   if (!apiKey) {
     return res.status(500).json({ ok: false, message: 'GEMINI_API_KEY not configured' });
   }
@@ -135,7 +136,7 @@ export async function intentRoute(req, res) {
   }
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const model = genAI.getGenerativeModel({ model: modelName });
     const prompt = systemPrompt + '\n\nUser said: ' + text;
     const result = await model.generateContent(prompt);
     const response = result.response;
@@ -155,11 +156,15 @@ export async function intentRoute(req, res) {
     }
     return res.json({ ok: true, intent, todos: intent.steps });
   } catch (e) {
-    console.error(e);
+    console.error('Intent extraction error:', e);
     return res.status(500).json({
       ok: false,
       message: 'Intent extraction failed. Please try again.',
-      detail: e.message,
+      detail: e?.message || 'Unknown error',
+      status: e?.status,
+      statusText: e?.statusText,
+      errorDetails: e?.errorDetails,
+      model: modelName,
     });
   }
 }

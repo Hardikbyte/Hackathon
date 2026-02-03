@@ -18,6 +18,34 @@ export function VoiceRecorder({ onRecorded, lastTranscript, onTranscriptConsumed
   const [replayList, setReplayList] = useState<TranscriptEntry[]>([]);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  const streamRef = useRef<MediaStream | null>(null);
+  const recognitionRef = useRef<any>(null);
+
+  const stopSpeechRecognition = useCallback(() => {
+    const recognition = recognitionRef.current;
+    recognitionRef.current = null;
+    if (recognition && typeof recognition.stop === 'function') {
+      try {
+        recognition.onresult = null;
+        recognition.onerror = null;
+        recognition.onend = null;
+        recognition.stop();
+      } catch {
+      }
+    }
+  }, []);
+
+  const stopMediaStreamTracks = useCallback(() => {
+    const stream = streamRef.current;
+    streamRef.current = null;
+    if (!stream) return;
+    stream.getTracks().forEach((t) => {
+      try {
+        t.stop();
+      } catch {
+      }
+    });
+  }, []);
 
   // Add API-returned transcript to replay list
   useEffect(() => {
@@ -33,33 +61,97 @@ export function VoiceRecorder({ onRecorded, lastTranscript, onTranscriptConsumed
   const startRecording = useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
       const recorder = new MediaRecorder(stream);
       chunksRef.current = [];
       recorder.ondataavailable = (e) => {
         if (e.data.size) chunksRef.current.push(e.data);
       };
       recorder.onstop = () => {
-        stream.getTracks().forEach((t) => t.stop());
+        stopSpeechRecognition();
+        stopMediaStreamTracks();
         const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
         if (blob.size > 0) onRecorded(blob);
       };
       mediaRecorderRef.current = recorder;
       recorder.start(500);
       setIsRecording(true);
-      setLiveTranscript('Listening…');
+      setLiveTranscript('Listening… (say “stop” to finish)');
+
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        const recognition = new SpeechRecognition();
+        recognitionRef.current = recognition;
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = 'en-US';
+
+        recognition.onresult = (event: any) => {
+          let combined = '';
+          for (let i = event.resultIndex; i < event.results.length; i += 1) {
+            const result = event.results[i];
+            const transcript = result?.[0]?.transcript ? String(result[0].transcript) : '';
+            if (transcript) combined += transcript;
+          }
+          const normalized = combined.trim();
+          if (normalized) setLiveTranscript(normalized);
+
+          const lower = normalized.toLowerCase().trim();
+          if (lower && /\bstop\b/.test(lower)) {
+            if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+              setLiveTranscript('Stopping…');
+              mediaRecorderRef.current.stop();
+              mediaRecorderRef.current = null;
+              setIsRecording(false);
+            }
+          }
+        };
+
+        recognition.onerror = () => {
+        };
+
+        recognition.onend = () => {
+        };
+
+        try {
+          recognition.start();
+        } catch {
+        }
+      }
     } catch (err) {
       setLiveTranscript('Microphone access denied. Please allow microphone and try again.');
     }
-  }, [onRecorded]);
+  }, [onRecorded, stopMediaStreamTracks, stopSpeechRecognition]);
 
   const stopRecording = useCallback(() => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      mediaRecorderRef.current = null;
-      setIsRecording(false);
-      setLiveTranscript('');
+    const recorder = mediaRecorderRef.current;
+    if (recorder && recorder.state !== 'inactive') {
+      setLiveTranscript('Stopping…');
+      try {
+        recorder.stop();
+      } catch {
+      }
     }
-  }, [isRecording]);
+    mediaRecorderRef.current = null;
+    stopSpeechRecognition();
+    stopMediaStreamTracks();
+    setIsRecording(false);
+  }, [stopMediaStreamTracks, stopSpeechRecognition]);
+
+  useEffect(() => {
+    return () => {
+      const recorder = mediaRecorderRef.current;
+      if (recorder && recorder.state !== 'inactive') {
+        try {
+          recorder.stop();
+        } catch {
+        }
+      }
+      mediaRecorderRef.current = null;
+      stopSpeechRecognition();
+      stopMediaStreamTracks();
+    };
+  }, [stopMediaStreamTracks, stopSpeechRecognition]);
 
   const replay = useCallback((entry: TranscriptEntry) => {
     setLiveTranscript(entry.text);
