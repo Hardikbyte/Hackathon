@@ -1,0 +1,28 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Travel Booking Demo</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<h1>Travel Booking</h1>
+<label>From</label>
+<input id="from" placeholder="City">
+<label>To</label>
+<input id="to" placeholder="City">
+<label>Date</label>
+<input id="date" type="date">
+<button id="proceed">Proceed to Checkout</button>
+<script>
+const btn = document.getElementById('proceed')
+btn.addEventListener('click', () => {
+  const from = document.getElementById('from').value
+  const to = document.getElementById('to').value
+  const date = document.getElementById('date').value
+  const q = new URLSearchParams({ from, to, date }).toString()
+  location.href = 'checkout.html?' + q
+})
+</script>
+</body>
+</html>

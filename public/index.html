@@ -1,0 +1,52 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Voice-to-Action Agent</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<h1>Voice-Activated Browser Automation</h1>
+<input id="cmd" placeholder="Type a command">
+<button id="run">Run</button>
+<button id="record">Record</button>
+<div id="out"></div>
+<script>
+async function run() {
+  const command = document.getElementById('cmd').value
+  const r = await fetch('/run', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ command })
+  })
+  const data = await r.json()
+  const out = document.getElementById('out')
+  if (data.ok) {
+    out.innerHTML = '<p>Parsed: ' + JSON.stringify(data.params) + '</p>' +
+      '<p><a href="' + data.checkoutUrl + '" target="_blank">Open checkout</a></p>' +
+      '<img src="' + data.screenshot + '" style="max-width:600px">'
+  } else {
+    out.textContent = 'Error: ' + (data.error || 'unknown')
+  }
+}
+document.getElementById('run').addEventListener('click', run)
+const recBtn = document.getElementById('record')
+let Recognition = window.SpeechRecognition || window.webkitSpeechRecognition
+if (Recognition) {
+  const recog = new Recognition()
+  recog.lang = 'en-US'
+  recog.interimResults = false
+  recog.maxAlternatives = 1
+  recog.addEventListener('result', e => {
+    const t = e.results[0][0].transcript
+    document.getElementById('cmd').value = t
+  })
+  recBtn.addEventListener('click', () => {
+    recog.start()
+  })
+} else {
+  recBtn.disabled = true
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Checkout</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<h1>Checkout</h1>
+<div id="summary"></div>
+<button id="pay">Pay Now</button>
+<script>
+const p = new URLSearchParams(location.search)
+const from = p.get('from') || ''
+const to = p.get('to') || ''
+const date = p.get('date') || ''
+document.getElementById('summary').textContent = 'From: ' + from + ' | To: ' + to + ' | Date: ' + date
+document.getElementById('pay').addEventListener('click', () => alert('Payment is mocked'))
+</script>
+</body>
+</html>
