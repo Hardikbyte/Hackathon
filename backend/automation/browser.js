@@ -1,7 +1,13 @@
 import { chromium } from 'playwright';
 
 export async function createBrowserSession() {
-  const browser = await chromium.launch({ headless: true });
+  // Set headless to false for demo/development so users can see the automation
+  // Set to true for production
+  const headless = process.env.HEADLESS_BROWSER === 'true';
+  const browser = await chromium.launch({ 
+    headless,
+    args: ['--no-sandbox', '--disable-setuid-sandbox']
+  });
   const context = await browser.newContext({ viewport: { width: 1280, height: 800 } });
   const page = await context.newPage();
   return { browser, context, page };
